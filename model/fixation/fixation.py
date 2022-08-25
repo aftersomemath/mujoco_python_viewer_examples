@@ -61,7 +61,7 @@ def fixation_control(m, d, gl_ctx, scn, cam, vopt, pert, ctx, viewport):
 def preload_callback(m, d):
   mujoco.set_mjcb_control(None)
 
-def load_callback(m, d, loadError):
+def load_callback(m, d):
   if m is not None:
     # Make the windmill spin
     d.joint('windmillrotor').qvel = 1

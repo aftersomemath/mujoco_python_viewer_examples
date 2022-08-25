@@ -54,7 +54,7 @@ def preload_callback(m, d):
   # Have to clear this callback before loading a model
   mujoco.set_mjcb_control(None)
 
-def load_callback(m, d, loadError):
+def load_callback(m, d):
   if m is not None:
     # Set some initial conditions
     d.joint('shoulder').qpos = 0.1
