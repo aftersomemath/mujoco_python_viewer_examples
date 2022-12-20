@@ -15,7 +15,7 @@
 """Example of using python simulate UI with offscreen cameras"""
 
 import mujoco
-from mujoco.simulate import run_simulate_and_physics
+import mujoco.viewer as viewer
 import numpy as np
 import cv2
 
@@ -58,10 +58,14 @@ def fixation_control(m, d, gl_ctx, scn, cam, vopt, pert, ctx, viewport):
     print(e)
     raise e
 
-def preload_callback(m, d):
+def load_callback(m=None, d=None):
+  # Clear the control callback before loading a new model
+  # or a Python exception is raised
   mujoco.set_mjcb_control(None)
 
-def load_callback(m, d):
+  m = mujoco.MjModel.from_xml_path('./fixation.xml')
+  d = mujoco.MjData(m)
+
   if m is not None:
     # Make the windmill spin
     d.joint('windmillrotor').qvel = 1
@@ -89,5 +93,7 @@ def load_callback(m, d):
       lambda m, d: fixation_control(
         m, d, gl_ctx, scn, cam, vopt, pert, ctx, viewport))
 
+  return m , d
+
 if __name__ == '__main__':
-  run_simulate_and_physics('fixation.xml', preload_callback, load_callback)
+  viewer.launch(loader=load_callback)

@@ -15,7 +15,7 @@
 """Example of using python simulate UI for a double pendulum"""
 
 import mujoco
-from mujoco.simulate import run_simulate_and_physics
+import mujoco.viewer as viewer
 import numpy as np
 from scipy.linalg import solve_continuous_are
 
@@ -50,18 +50,23 @@ def double_pendulum_control(m, d, K):
   u = -K @ x
   d.actuator('shoulder').ctrl[0] = u
 
-def preload_callback(m, d):
-  # Have to clear this callback before loading a model
+def load_callback(m=None, d=None):
+  # Clear the control callback before loading a new model
+  # or a Python exception is raised
   mujoco.set_mjcb_control(None)
 
-def load_callback(m, d):
+  m = mujoco.MjModel.from_xml_path('./double_pendulum.xml')
+  d = mujoco.MjData(m)
+
   if m is not None:
     # Set some initial conditions
     d.joint('shoulder').qpos = 0.1
     d.joint('elbow').qpos = 0.1
-    # Set the callback
+    # Set the control callback
+    K = double_pendulum_lqr_K()
     mujoco.set_mjcb_control(lambda m, d: double_pendulum_control(m, d, K))
 
+  return m, d
+
 if __name__ == '__main__':
-  K = double_pendulum_lqr_K()
-  run_simulate_and_physics('./double_pendulum.xml', preload_callback, load_callback)
+  viewer.launch(loader=load_callback)
