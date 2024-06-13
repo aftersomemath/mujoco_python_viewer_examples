@@ -2,20 +2,20 @@
 
 import mujoco
 import mujoco.viewer as viewer
+from mujoco.renderer import Renderer
 import numpy as np
 import cv2
 
-RES_X = 1280
-RES_Y = 720
-
-def fixation_control(m, d, gl_ctx, scn, cam, vopt, pert, ctx, viewport):
+def fixation_control(m, d, renderer):
   try:
     # Render the simulated camera
-    mujoco.mjv_updateScene(m, d, vopt, pert, cam, mujoco.mjtCatBit.mjCAT_ALL, scn)
-    mujoco.mjr_render(viewport, scn, ctx)
-    image = np.empty((RES_Y, RES_X, 3), dtype=np.uint8)
-    mujoco.mjr_readPixels(image, None, viewport, ctx)
-    image = cv2.flip(image, 0) # OpenGL renders with inverted y axis
+    # mujoco.mjv_updateScene(m, d, vopt, pert, cam, mujoco.mjtCatBit.mjCAT_ALL, scn)
+    # mujoco.mjr_render(viewport, scn, ctx)
+    # image = np.empty((RES_Y, RES_X, 3), dtype=np.uint8)
+    # mujoco.mjr_readPixels(image, None, viewport, ctx)
+    # image = cv2.flip(image, 0) # OpenGL renders with inverted y axis
+    renderer.update_scene(d, camera=0)
+    image = renderer.render()
 
     # Show the simulated camera image
     cv2.imshow('fixation', cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
@@ -56,28 +56,16 @@ def load_callback(m=None, d=None):
     # Make the windmill spin
     d.joint('windmillrotor').qvel = 1
 
-    # Make all the things needed to render a simulated camera
-    gl_ctx = mujoco.GLContext(RES_X, RES_Y)
-    gl_ctx.make_current()
-
-    scn = mujoco.MjvScene(m, maxgeom=100)
-
-    cam = mujoco.MjvCamera()
-    cam.type = mujoco.mjtCamera.mjCAMERA_FIXED
-    cam.fixedcamid = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_CAMERA, 'fixater')
-
-    vopt = mujoco.MjvOption()
-    pert = mujoco.MjvPerturb()
-
-    ctx = mujoco.MjrContext(m, mujoco.mjtFontScale.mjFONTSCALE_150)
-    mujoco.mjr_setBuffer(mujoco.mjtFramebuffer.mjFB_OFFSCREEN, ctx)
-
-    viewport = mujoco.MjrRect(0, 0, RES_X, RES_Y)
+    # Make sure the following is in the xml:
+    #   <visual>
+    #     <global  offwidth="1280" offheight="720"/>
+    #   </visual>
+    renderer = Renderer(m, width=1280, height=720)
 
     # Set the callback and capture all variables needed for rendering
     mujoco.set_mjcb_control(
       lambda m, d: fixation_control(
-        m, d, gl_ctx, scn, cam, vopt, pert, ctx, viewport))
+        m, d, renderer))
 
   return m , d
 
